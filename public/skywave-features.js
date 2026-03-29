@@ -844,4 +844,3 @@ function waitForMap() {
 
 waitForMap();
 })();
-.jurisdiction

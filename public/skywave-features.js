@@ -10,7 +10,7 @@
    CONFIGURATION
    ================================================================ */
 var SUPABASE_URL = 'https://skpxeouvikzgsaurkohf.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHhlb3V2aWt6Z3NhdXJrb2hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODM5NjMsImV4cCI6MjA4NjU1OTk2M30.wEWgn8uB4k0KhW5EUjlDUnUAOV1TBrKSmpqB8DLbsyk';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInhR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHhlb3V2aWt6Z3NhdXJrb2hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODM5NjMsImV4cCI6MjA4NjU1OTk2M30.wEWgn8uB4k0KhW5EUjlDUnUAOV1TBrKSmpqB8DLbsyk';
 var MAPILLARY_CLIENT_ID = '2129296374580243';
 
 /* ================================================================
@@ -825,17 +825,22 @@ function bootFeatures() {
   }, 100);
 }
 
-// Wait for map to be available and loaded
+// Wait for map to be available and loaded, with fallback timer
+var _booted = false;
 function waitForMap() {
+  if (_booted) return;
   if (typeof map !== 'undefined' && map.loaded && map.loaded()) {
+    _booted = true;
     bootFeatures();
   } else if (typeof map !== 'undefined') {
-    map.on('load', bootFeatures);
+    map.on('load', function() { if (!_booted) { _booted = true; bootFeatures(); } });
+    map.on('style.load', function() { if (!_booted) { _booted = true; bootFeatures(); } });
+    // Fallback: if map never fires load (e.g. slow tiles), boot after 8 seconds
+    setTimeout(function() { if (!_booted) { _booted = true; bootFeatures(); } }, 8000);
   } else {
     setTimeout(waitForMap, 200);
   }
 }
 
 waitForMap();
-
 })();

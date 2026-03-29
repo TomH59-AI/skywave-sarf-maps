@@ -570,15 +570,15 @@ function initZoning() {
 
   // Load jurisdictions
   statusDiv.textContent = 'Loading jurisdictions...';
-  supabaseRequest('zoning_ordinances?select=jurisdiction&order=jurisdiction').then(function(r) { return r.json(); }).then(function(data) {
-    _ordinances = data || [];
+  supabaseRequest('zoning_ordinances?select=jurisdiction_name&order=jurisdiction_name').then(function(r) { return r.json(); }).then(function(data) {
+    _ordinances = Array.isArray(data) ? data : [];
     var seen = {};
     _ordinances.forEach(function(o) {
-      if (!seen[o.jurisdiction]) {
-        seen[o.jurisdiction] = true;
+      if (!seen[o.jurisdiction_name]) {
+        seen[o.jurisdiction_name] = true;
         var opt = document.createElement('option');
-        opt.value = o.jurisdiction;
-        opt.textContent = o.jurisdiction;
+        opt.value = o.jurisdiction_name;
+        opt.textContent = o.jurisdiction_name;
         jurisdictionSelect.appendChild(opt);
       }
     });
@@ -592,36 +592,36 @@ function initZoning() {
     _currentJurisdiction = j;
 
     // Fetch full ordinance data for this jurisdiction
-    supabaseRequest('zoning_ordinances?jurisdiction=eq.' + encodeURIComponent(j) + '&select=*').then(function(r) { return r.json(); }).then(function(data) {
+    supabaseRequest('zoning_ordinances?jurisdiction_name=eq.' + encodeURIComponent(j) + '&select=*').then(function(r) { return r.json(); }).then(function(data) {
       if (!data || !data.length) { body.innerHTML = '<p>No data found for ' + j + '</p>'; return; }
       var o = data[0];
       titleEl.textContent = '\u{1F3DB} ' + j + ' - Telecom Zoning Ordinance';
 
       var html = '<h3>Tower Standards</h3>';
-      html += zRow('Max Tower Height', o.max_tower_height || 'Not specified');
-      html += zRow('Setback Requirements', o.setback_requirements || o.setbacks || 'Not specified');
-      html += zRow('Fall Zone', o.fall_zone || 'Not specified');
+      html += zRow('Max Tower Height', o.max_tower_height_ft ? o.max_tower_height_ft + ' ft' : 'Not specified');
+      html += zRow('Setback Requirements', o.setback_requirement || 'Not specified');
+      html += zRow('Fall Zone', o.fall_zone_requirement || 'Not specified');
 
       html += '<h3>Requirements</h3>';
-      html += zRow('Collocation Required', zBool(o.collocation_required || o.collocation));
-      html += zRow('Stealth Design', zBool(o.stealth_required || o.stealth));
-      html += zRow('Landscaping Required', zBool(o.landscaping_required || o.landscaping));
+      html += zRow('Collocation Required', zBool(o.collocation_required));
+      html += zRow('Stealth Design', zBool(o.stealth_required));
+      html += zRow('Landscaping Required', zBool(o.landscaping_required));
 
       html += '<h3>Permitting</h3>';
       html += zRow('Permit Type', o.permit_type || 'Not specified');
-      html += zRow('Application Fee', o.application_fee || o.fees || 'Not specified');
-      html += zRow('Public Hearing Required', zBool(o.public_hearing_required || o.public_hearing));
-      html += zRow('Balloon Test Required', zBool(o.balloon_test_required || o.balloon_test));
-      html += zRow('Photo Simulation Required', zBool(o.photo_sim_required || o.photo_sim));
+      html += zRow('Application Fee', o.application_fee || 'Not specified');
+      html += zRow('Public Hearing Required', zBool(o.public_hearing_required));
+      html += zRow('Balloon Test Required', zBool(o.balloon_test_required));
+      html += zRow('Photo Simulation Required', zBool(o.photo_sim_required));
 
-      if (o.additional_requirements || o.notes) {
+      if (o.additional_requirements) {
         html += '<h3>Additional Requirements</h3>';
         html += '<div style="font-size:12px;line-height:1.5;padding:6px 0">' + (o.additional_requirements || o.notes || '') + '</div>';
       }
 
       html += '<h3>Source</h3>';
-      html += zRow('Ordinance Reference', o.ordinance_reference || o.source || 'Municipal Code');
-      html += zRow('Last Verified', o.last_verified || o.updated_at || 'N/A');
+      html += zRow('Ordinance Reference', o.ldc_section_reference || o.ordinance_source_url || 'Municipal Code');
+      html += zRow('Last Verified', o.last_verified || 'N/A');
 
       body.innerHTML = html;
       overlay.style.display = 'flex';
@@ -634,10 +634,10 @@ function initZoning() {
     e.stopPropagation();
     if (!_currentJurisdiction) return;
     municodeBtn.textContent = 'Loading...';
-    supabaseRequest('municode_ordinances?jurisdiction=eq.' + encodeURIComponent(_currentJurisdiction) + '&select=*&order=section_number').then(function(r) { return r.json(); }).then(function(data) {
+    supabaseRequest('municode_ordinances?jurisdiction_name=eq.' + encodeURIComponent(_currentJurisdiction) + '&select=*&order=section_number').then(function(r) { return r.json(); }).then(function(data) {
       if (!data || !data.length) {
         // Try partial match
-        return supabaseRequest('municode_ordinances?jurisdiction=ilike.' + encodeURIComponent('%' + _currentJurisdiction.replace('County', '').replace('City of ', '').trim() + '%') + '&select=*&order=section_number&limit=20').then(function(r2) { return r2.json(); });
+        return supabaseRequest('municode_ordinances?jurisdiction_name=ilike.' + encodeURIComponent('%' + _currentJurisdiction.replace('County', '').replace('City of ', '').trim() + '%') + '&select=*&order=section_number&limit=20').then(function(r2) { return r2.json(); });
       }
       return data;
     }).then(function(data) {
@@ -844,3 +844,4 @@ function waitForMap() {
 
 waitForMap();
 })();
+.jurisdiction

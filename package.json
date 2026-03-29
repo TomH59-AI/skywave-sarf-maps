@@ -1,0 +1,12 @@
+{
+    "name": "skywave-sarf-maps",
+    "version": "1.0.0",
+    "description": "SkyWave SARF Tower Siting Maps",
+    "main": "server.js",
+    "scripts": {
+          "start": "node server.js"
+    },
+    "dependencies": {
+          "express": "^4.18.2"
+    }
+}

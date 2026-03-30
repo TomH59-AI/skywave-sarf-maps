@@ -888,6 +888,38 @@ function bootFeatures() {
     initFiber();
     initZoning();
     initMailer();            initTransmission();
+  /* ================================================================
+   BASE STYLE SWITCHER - preserves custom layers across setStyle calls
+   ================================================================ */
+function initStyleSwitch() {
+  function switchBaseStyle(styleUrl) {
+    var style = map.getStyle();
+    var customIds = Object.keys(style.sources).filter(function(id) {
+      return id !== 'composite' && id.indexOf('mapbox') !== 0;
+    });
+    var savedSources = {};
+    customIds.forEach(function(id) {
+      savedSources[id] = JSON.parse(JSON.stringify(style.sources[id]));
+    });
+    var savedLayers = style.layers.filter(function(l) {
+      return l.source && customIds.indexOf(l.source) !== -1;
+    }).map(function(l) { return JSON.parse(JSON.stringify(l)); });
+    map.setStyle(styleUrl);
+    map.once('style.load', function() {
+      for (var id in savedSources) {
+        try { if (!map.getSource(id)) map.addSource(id, savedSources[id]); } catch(e) {}
+      }
+      savedLayers.forEach(function(layer) {
+        try { if (!map.getLayer(layer.id)) map.addLayer(layer); } catch(e) {}
+      });
+    });
+  }
+  var bsEl = document.getElementById('bs');
+  var baEl = document.getElementById('ba');
+  if (bsEl) bsEl.onchange = function() { switchBaseStyle('mapbox://styles/mapbox/outdoors-v12'); };
+  if (baEl) baEl.onchange = function() { switchBaseStyle('mapbox://styles/mapbox/satellite-streets-v12'); };
+}
+
   initStyleSwitch();
     ss('SkyWave Features Engine loaded');
   }, 100);

@@ -888,6 +888,7 @@ function bootFeatures() {
     initFiber();
     initZoning();
     initMailer();            initTransmission();
+  initStyleSwitch();
     ss('SkyWave Features Engine loaded');
   }, 100);
 }

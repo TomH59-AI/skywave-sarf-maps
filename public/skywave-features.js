@@ -357,7 +357,7 @@ function initTransmission() {
 function bootFeatures() {
   injectCSS();injectToolbarButtons();injectSidebarSections();injectModals();
   setTimeout(function() {
-    initMeasureTool();initSiteCapture();initStreetView();initLeadSync();initFiber();initZoning();initMailer();initTargetPicker();initTransmission();
+    initMeasureTool();initSiteCapture();initStreetView();initLeadSync();initFiber();initZoning();initMailer();initTargetPicker();initTransmission();initStripePaywall();
     var sarfToggle=document.getElementById('sarf-ring-toggle');
     if(sarfToggle){sarfToggle.addEventListener('change',function(){var v=this.checked?'visible':'none';if(map.getLayer('sf'))map.setLayoutProperty('sf','visibility',v);if(map.getLayer('sl'))map.setLayoutProperty('sl','visibility',v);});}
     var lpCb=document.getElementById('lp');
@@ -396,4 +396,89 @@ function waitForMap(){
   }else{setTimeout(waitForMap,200);}
 }
 waitForMap();
+
+// STRIPE PAYWALL
+function initStripePaywall() {
+  var p = new URLSearchParams(window.location.search);
+  if (p.get("scip_paid")==="1") {
+    localStorage.setItem("sw_scip_unlocked","1");
+    localStorage.setItem("sw_scip_plan",p.get("plan")||"scip_one");
+    window.history.replaceState({},"","/app");
+    showUnlockToast(localStorage.getItem("sw_scip_plan"));
+  }
+  var sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+  var bar = document.createElement("div");
+  bar.id = "scip-status-bar";
+  bar.style.cssText = "background:#111;border:1px solid #2a2a3e;border-radius:6px;padding:10px 12px;margin:4px 0;font-size:11px;";
+  var si = sidebar.querySelector(".si");
+  if (si && si.nextSibling) sidebar.insertBefore(bar, si.nextSibling);
+  else sidebar.appendChild(bar);
+  updateSCIPBar();
+  injectUpgradeModal();
+  gateButtons();
+}
+function isUnlocked(){ return localStorage.getItem("sw_scip_unlocked")==="1"; }
+function updateSCIPBar(){
+  var bar=document.getElementById("scip-status-bar"); if(!bar) return;
+  if(isUnlocked()){
+    var plan=localStorage.getItem("sw_scip_plan")||"";
+    bar.innerHTML="<div style='display:flex;align-items:center;justify-content:space-between;'>"
+      +"<span style='color:#00e676;font-weight:700;'>&#10003; "+(plan==="pro_monthly"?"Pro Monthly":"SCIP Unlocked")+"</span>"
+      +"<button onclick='lockSCIP()' style='background:none;border:none;color:#555;font-size:10px;cursor:pointer;'>reset</button></div>"
+      +"<div style='color:#666;margin-top:3px;'>Full SCIP features active</div>";
+  } else {
+    bar.innerHTML="<div style='color:#ffcc00;font-weight:700;margin-bottom:4px;'>&#9889; Free Preview Mode</div>"
+      +"<div style='color:#888;line-height:1.4;'>Mailer preview free. <strong style='color:#ccc;'>Unlock full SCIP for $49</strong> to export, print &amp; pick D/E.</div>"
+      +"<button onclick='openUpgradeModal()' style='margin-top:8px;width:100%;padding:7px;background:#ffcc00;color:#000;border:none;border-radius:5px;font-weight:700;font-size:11px;cursor:pointer;'>Unlock This SCIP &#8594; $49</button>";
+  }
+}
+window.lockSCIP=function(){ localStorage.removeItem("sw_scip_unlocked"); localStorage.removeItem("sw_scip_plan"); updateSCIPBar(); };
+function injectUpgradeModal(){
+  if(document.getElementById("upgrade-modal")) return;
+  var m=document.createElement("div"); m.id="upgrade-modal";
+  m.style.cssText="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(4px);align-items:center;justify-content:center;";
+  m.innerHTML="<div style='background:#111;border:1px solid #2a2a3e;border-radius:16px;padding:36px 32px;max-width:480px;width:90%;position:relative;text-align:center;'>"
+    +"<button onclick='closeUpgradeModal()' style='position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:22px;cursor:pointer;'>&times;</button>"
+    +"<div style='font-size:36px;margin-bottom:12px;'>&#128204;</div>"
+    +"<h2 style='color:#fff;font-size:22px;font-weight:800;margin-bottom:8px;'>Complete This SCIP</h2>"
+    +"<p style='color:#888;font-size:13px;line-height:1.6;margin-bottom:24px;'>You have seen the mailer. Now finish the job &#8212; export letters, pick Targets D &amp; E, and download your CSV.</p>"
+    +"<div style='display:flex;gap:12px;margin-bottom:16px;'>"
+    +"<div style='flex:1;background:#0d0d18;border:1px solid #2a2a3e;border-radius:10px;padding:16px;'><div style='font-size:28px;font-weight:800;color:#ffcc00;'>$49</div><div style='font-size:11px;color:#888;margin:4px 0 12px;'>One SCIP</div><button id='um-scip-btn' style='width:100%;padding:10px;background:#ffcc00;color:#000;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;'>Unlock Now</button></div>"
+    +"<div style='flex:1;background:#0d0d18;border:2px solid #7b2fff;border-radius:10px;padding:16px;'><div style='font-size:28px;font-weight:800;color:#7b2fff;'>$99<span style='font-size:13px;color:#888;'>/mo</span></div><div style='font-size:11px;color:#888;margin:4px 0 12px;'>5 SCIPs/month</div><button id='um-pro-btn' style='width:100%;padding:10px;background:linear-gradient(135deg,#7b2fff,#4444ff);color:#fff;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;'>Go Pro</button></div></div>"
+    +"<a href='/pricing' style='color:#555;font-size:12px;text-decoration:none;'>View full pricing &rarr;</a></div>";
+  document.body.appendChild(m);
+  document.getElementById("um-scip-btn").onclick=function(){ doCheckout("scip_one"); };
+  document.getElementById("um-pro-btn").onclick=function(){ doCheckout("pro_monthly"); };
+}
+window.openUpgradeModal=function(){ var m=document.getElementById("upgrade-modal"); if(m) m.style.display="flex"; };
+window.closeUpgradeModal=function(){ var m=document.getElementById("upgrade-modal"); if(m) m.style.display="none"; };
+function doCheckout(pt){
+  var bid=pt==="scip_one"?"um-scip-btn":"um-pro-btn";
+  var btn=document.getElementById(bid);
+  if(btn){btn.textContent="Redirecting...";btn.disabled=true;}
+  fetch("/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceType:pt,successUrl:window.location.origin+"/app?scip_paid=1&plan="+pt,cancelUrl:window.location.origin+"/pricing"})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.url)window.location.href=d.url;else throw new Error(d.error||"Checkout failed");})
+    .catch(function(e){if(btn){btn.textContent="Error - Retry";btn.disabled=false;}alert("Checkout error: "+e.message);});
+}
+function gateButtons(){
+  document.addEventListener("click",function(e){
+    if(isUnlocked()) return;
+    var el=e.target;
+    while(el&&el!==document){
+      if(el.id==="mm-export"||el.id==="mm-print"||(el.dataset&&el.dataset.gated==="scip")){
+        e.stopImmediatePropagation(); e.preventDefault(); openUpgradeModal(); return;
+      }
+      el=el.parentElement;
+    }
+  },true);
+}
+function showUnlockToast(plan){
+  var t=document.createElement("div");
+  t.style.cssText="position:fixed;bottom:24px;right:24px;background:#00e676;color:#000;padding:14px 20px;border-radius:10px;font-weight:700;font-size:14px;z-index:99999;box-shadow:0 4px 20px rgba(0,229,118,.4);";
+  t.textContent=plan==="pro_monthly"?"Pro Plan Active! 5 SCIPs/month unlocked.":"SCIP Unlocked! Export and print your mailers.";
+  document.body.appendChild(t); updateSCIPBar(); setTimeout(function(){t.remove();},5000);
+}
+
 })();

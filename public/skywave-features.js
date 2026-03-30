@@ -804,6 +804,73 @@ function initMailer() {
 }
 
 /* ================================================================
+   HIFLD TRANSMISSION LINES
+   ================================================================ */
+function initTransmission() {
+  var cb = document.getElementById('ltx');
+  if (!cb) return;
+
+  var HIFLD_URL = 'https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0/query';
+
+  function loadTxLines() {
+    var bounds = map.getBounds();
+    var env = bounds.getWest() + ',' + bounds.getSouth() + ',' + bounds.getEast() + ',' + bounds.getNorth();
+    var params = 'where=1%3D1&outFields=OWNER,VOLTAGE,VOLT_CLASS,STATUS,TYPE&geometryType=esriGeometryEnvelope&geometry=' + encodeURIComponent(env) + '&inSR=4326&outSR=4326&f=geojson&resultRecordCount=2000';
+    var url = HIFLD_URL + '?' + params;
+    document.getElementById('st').textContent = 'Loading transmission lines...';
+    document.getElementById('st').style.display = 'block';
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.features) { document.getElementById('st').style.display = 'none'; return; }
+        var src = map.getSource('txlines');
+        if (src) {
+          src.setData(data);
+        } else {
+          map.addSource('txlines', { type: 'geojson', data: data });
+          map.addLayer({
+            id: 'txlines-line',
+            type: 'line',
+            source: 'txlines',
+            paint: {
+              'line-color': '#ff00ff',
+              'line-width': 2,
+              'line-opacity': 0.8
+            }
+          });
+          map.on('click', 'txlines-line', function(e) {
+            var p = e.features[0].properties;
+            new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML('<div style="font-size:13px"><b>Transmission Line</b><br>Owner: ' + (p.OWNER || 'N/A') + '<br>Voltage: ' + (p.VOLTAGE || 'N/A') + ' kV<br>Class: ' + (p.VOLT_CLASS || 'N/A') + '<br>Status: ' + (p.STATUS || 'N/A') + '<br>Type: ' + (p.TYPE || 'N/A') + '</div>')
+              .addTo(map);
+          });
+          map.on('mouseenter', 'txlines-line', function() { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', 'txlines-line', function() { map.getCanvas().style.cursor = ''; });
+        }
+        document.getElementById('st').textContent = data.features.length + ' transmission lines loaded';
+        setTimeout(function() { document.getElementById('st').style.display = 'none'; }, 2000);
+      })
+      .catch(function(err) {
+        console.error('HIFLD error:', err);
+        document.getElementById('st').style.display = 'none';
+      });
+  }
+
+  cb.addEventListener('change', function() {
+    if (cb.checked) {
+      loadTxLines();
+      map.on('moveend', loadTxLines);
+      cb._txHandler = loadTxLines;
+    } else {
+      if (cb._txHandler) map.off('moveend', cb._txHandler);
+      if (map.getLayer('txlines-line')) map.removeLayer('txlines-line');
+      if (map.getSource('txlines')) map.removeSource('txlines');
+    }
+  });
+}
+
+/* ================================================================
    INITIALIZATION - Wait for map load, then boot all features
    ================================================================ */
 function bootFeatures() {

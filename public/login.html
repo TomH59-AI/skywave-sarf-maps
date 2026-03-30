@@ -1,232 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>SkyWave - Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%;width:100%;overflow:hidden}
-    body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;display:flex;align-items:center;justify-content:center}
-    .bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#0a0a0f 0%,#0d1117 50%,#0a0a0f 100%);z-index:0}
-    .bg-grid::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background-image:radial-gradient(circle at 1px 1px,rgba(255,204,0,.07) 1px,transparent 0);background-size:40px 40px}
-    .bg-grid::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 50%,rgba(255,204,0,.04) 0%,transparent 70%)}
-    .wave-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;overflow:hidden;pointer-events:none}
-    .wave{position:absolute;width:200%;height:200px;opacity:.03;left:-50%}
-    .wave svg{width:100%;height:100%}
-    .wave:nth-child(1){top:15%;animation:waveFloat 12s ease-in-out infinite}
-    .wave:nth-child(2){top:45%;animation:waveFloat 15s ease-in-out infinite reverse}
-    .wave:nth-child(3){top:75%;animation:waveFloat 18s ease-in-out infinite}
-    @keyframes waveFloat{0%,100%{transform:translateX(-5%)}50%{transform:translateX(5%)}}
-    .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:1;pointer-events:none}
-    .orb-1{width:400px;height:400px;background:rgba(255,204,0,.06);top:-100px;right:-100px;animation:orbPulse 8s ease-in-out infinite}
-    .orb-2{width:300px;height:300px;background:rgba(0,150,255,.04);bottom:-50px;left:-50px;animation:orbPulse 10s ease-in-out infinite reverse}
-    @keyframes orbPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
-    .login-container{position:relative;z-index:10;width:100%;max-width:460px;padding:20px}
-    .logo-section{text-align:center;margin-bottom:36px}
-    .logo-icon{position:relative;width:100px;height:100px;margin:0 auto 20px}
-    .logo-ring{position:absolute;top:0;left:0;width:100%;height:100%;border:2px solid rgba(255,204,0,.3);border-radius:50%;animation:ringRotate 20s linear infinite}
-    .logo-ring::before{content:'';position:absolute;top:-4px;left:50%;width:8px;height:8px;background:#ffcc00;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 12px #ffcc00}
-    .logo-ring-2{position:absolute;top:10px;left:10px;width:80px;height:80px;border:1.5px solid rgba(255,204,0,.2);border-radius:50%;animation:ringRotate 15s linear infinite reverse}
-    .logo-wave-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:30px;overflow:hidden}
-    .logo-wave-inner{display:flex;align-items:center;height:100%}
-    .logo-wave-inner svg{width:50px;height:30px}
-    .company-name{font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;letter-spacing:6px;background:linear-gradient(135deg,#ffcc00 0%,#ff8800 50%,#ffcc00 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;margin-bottom:4px}
-    @keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
-    @keyframes ringRotate{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    .slogan{font-family:'Inter',sans-serif;font-size:14px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:3px;text-transform:uppercase;line-height:1.6}
-    .login-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,204,0,.1);border-radius:16px;padding:36px 32px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05)}
-    .login-card h2{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,204,0,.7);margin-bottom:24px;text-align:center}
-    .form-group{margin-bottom:18px}
-    .form-group label{display:block;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.4);margin-bottom:6px}
-    .form-group input{width:100%;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,204,0,.15);border-radius:10px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;transition:all .3s ease;outline:none}
-    .form-group input:focus{border-color:rgba(255,204,0,.5);background:rgba(255,255,255,.06);box-shadow:0 0 20px rgba(255,204,0,.08)}
-    .form-group input::placeholder{color:rgba(255,255,255,.2)}
-    .remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;font-size:12px}
-    .remember-row label{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);cursor:pointer}
-    .remember-row input[type=checkbox]{accent-color:#ffcc00;width:14px;height:14px}
-    .remember-row a{color:rgba(255,204,0,.6);text-decoration:none;font-weight:500;transition:color .3s}
-    .remember-row a:hover{color:#ffcc00}
-    .btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#ffcc00,#ff9500);border:none;border-radius:10px;color:#0a0a0f;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden}
-    .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,204,0,.3)}
-    .btn-login:active{transform:translateY(0)}
-    .divider{display:flex;align-items:center;margin:24px 0;gap:12px}
-    .divider span{font-size:11px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
-    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
-    .btn-demo{width:100%;padding:14px;background:transparent;border:1px solid rgba(255,204,0,.2);border-radius:10px;color:rgba(255,204,0,.7);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .3s ease;letter-spacing:1px}
-    .btn-demo:hover{border-color:rgba(255,204,0,.5);background:rgba(255,204,0,.05);color:#ffcc00}
-    .footer-text{text-align:center;margin-top:24px;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:1px}
-    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-    .shake{animation:shake .3s ease}
-    .error-msg{color:#ff4444;font-size:12px;text-align:center;margin-bottom:12px;display:none}
-    .success-msg{color:#00cc66;font-size:12px;text-align:center;margin-bottom:12px;display:none}
-    .toggle-mode{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)}
-    .toggle-mode a{color:rgba(255,204,0,.6);text-decoration:none;cursor:pointer;font-weight:500}
-    .toggle-mode a:hover{color:#ffcc00}
-    </style>
-  </head>
-  <body>
-    <div class="bg-grid"></div>div>
-    <div class="wave-container">
-      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,100 C320,150 420,50 720,100 C1020,150 1120,50 1440,100" stroke="#ffcc00" stroke-width="1.5" fill="none"/></svg>svg></div>div>
-      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,80 C360,130 460,30 720,80 C980,130 1080,30 1440,80" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
-      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,120 C280,170 380,70 720,120 C1060,170 1160,70 1440,120" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
-    </div>div>
-    <div class="orb orb-1"></div>div>
-    <div class="orb orb-2"></div>div>
-    <div class="login-container">
-      <div class="logo-section">
-        <div class="logo-icon">
-          <div class="logo-ring"></div>div>
-          <div class="logo-ring-2"></div>div>
-          <div class="logo-wave-wrap"><div class="logo-wave-inner">
-            <svg viewBox="0 0 50 30" fill="none">
-              <path d="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15" stroke="#ffcc00" stroke-width="2.5" fill="none"><animate attributeName="d" dur="2s" repeatCount="indefinite" values="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 25,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15"/></path>path>
-              <path d="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15" stroke="rgba(255,204,0,.3)" stroke-width="1.5" fill="none"><animate attributeName="d" dur="2.5s" repeatCount="indefinite" values="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 22,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15"/></path>path>
-            </svg>svg>
-          </div>div></div>div>
-        </div>div>
-        <div class="company-name">SKYWAVE</div>div>
-        <div class="slogan">AI Removes Telecom Complexity</div>div>
-      </div>div>
-      <div class="login-card">
-        <h2 id="formTitle">Sign In</h2>h2>
-        <div class="error-msg" id="errMsg"></div>div>
-        <div class="success-msg" id="successMsg"></div>div>
-        <form id="loginForm">
-          <div class="form-group"><label>Email Address</label>
-          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email"></div>div>
-        <div class="form-group"><label>Password</label>
-        <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password"></div>div>
-        <div class="form-group" id="confirmGroup" style="display:none"><label>Confirm Password</label>
-        <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password"></div>div>
-        <div class="remember-row" id="rememberRow">
-        <label><input type="checkbox" id="remember"> Remember me</label>
-        <a href="#" id="forgotLink">Forgot password?</a>a></div>div>
-        <button type="submit" class="btn-login" id="loginBtn">Launch Platform</button>button>
-        </form>form>
-      <div class="divider"><span>or</span></div>div>
-      <button class="btn-demo" id="demoBtn">Explore Demo</button>button>
-      <div class="toggle-mode" id="toggleMode">No account? <a id="toggleLink">Create one</a>a></div>div>
-      </div>div>
-    <div class="footer-text">&copy; 2026 SkyWave Technologies &mdash; SARF Tower Siting Platform</div>div>
-    </div>div>
-  <script>
-    var SB_URL='https://skpxeouvikzgsaurkohf.supabase.co';
-    var SB_KEY='';
-    var sb=null;
-
-    // Load anon key from skywave-features.js dynamically
-    fetch('/skywave-features.js').then(function(r){return r.text()}).then(function(t){
-      var m=t.match(/SUPABASE_ANON_KEY\s*=\s*'([^']+)'/);
-      if(m){SB_KEY=m[1];try{sb=supabase.createClient(SB_URL,SB_KEY);
-                            sb.auth.getSession().then(function(res){if(res.data.session){window.location.href='/app'}});
-                           }catch(e){sb=null}}
-    }).catch(function(){});
-
-    var isSignUp=false;
-    document.getElementById('toggleLink').onclick=function toggleFn(e){
-      e.preventDefault();isSignUp=!isSignUp;
-      document.getElementById('errMsg').style.display='none';
-      document.getElementById('successMsg').style.display='none';
-      if(isSignUp){
-        document.getElementById('formTitle').textContent='Create Account';
-        document.getElementById('loginBtn').textContent='Sign Up';
-        document.getElementById('confirmGroup').style.display='block';
-        document.getElementById('rememberRow').style.display='none';
-        document.getElementById('toggleMode').innerHTML='Have an account? <a id="toggleLink">Sign in</a>';
-      }else{
-        document.getElementById('formTitle').textContent='Sign In';
-        document.getElementById('loginBtn').textContent='Launch Platform';
-        document.getElementById('confirmGroup').style.display='none';
-        document.getElementById('rememberRow').style.display='flex';
-        document.getElementById('toggleMode').innerHTML='No account? <a id="toggleLink">Create one</a>';
-      }
-      document.getElementById('toggleLink').onclick=toggleFn;
-    };
-
-    document.getElementById('loginForm').onsubmit=function(e){
-      e.preventDefault();
-      var em=document.getElementById('email').value.trim();
-      var pw=document.getElementById('password').value;
-      document.getElementById('errMsg').style.display='none';
-      document.getElementById('successMsg').style.display='none';
-      if(!em||!pw){showErr('Please enter email and password');return}
-      if(isSignUp){
-        var cp=document.getElementById('confirmPassword').value;
-        if(pw!==cp){showErr('Passwords do not match');return}
-        if(pw.length<6){showErr('Password must be at least 6 characters');return}
-        doSignUp(em,pw);
-      }else{doLogin(em,pw)}
-    };
-
-    function doLogin(em,pw){
-      var btn=document.getElementById('loginBtn');
-      btn.textContent='Authenticating...';btn.style.opacity='.7';btn.style.pointerEvents='none';
-      if(!sb){fallbackLogin(em,pw);return}
-      sb.auth.signInWithPassword({email:em,password:pw}).then(function(res){
-        if(res.error){showErr(res.error.message);resetBtn()}
-        else{sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);
-             sessionStorage.setItem('sw_token',res.data.session.access_token);window.location.href='/app'}
-      }).catch(function(){fallbackLogin(em,pw)});
-    }
-
-    function doSignUp(em,pw){
-      var btn=document.getElementById('loginBtn');
-      btn.textContent='Creating Account...';btn.style.opacity='.7';btn.style.pointerEvents='none';
-      if(!sb){showErr('Auth service loading, try again');resetBtn();return}
-      sb.auth.signUp({email:em,password:pw}).then(function(res){
-        if(res.error){showErr(res.error.message);resetBtn()}
-        else if(res.data.user&&res.data.session){
-          sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);
-          sessionStorage.setItem('sw_token',res.data.session.access_token);window.location.href='/app';
-        }else if(res.data.user&&!res.data.session){
-          document.getElementById('successMsg').textContent='Account created! Check email to confirm, then sign in.';
-          document.getElementById('successMsg').style.display='block';
-          isSignUp=false;document.getElementById('formTitle').textContent='Sign In';
-          document.getElementById('loginBtn').textContent='Launch Platform';
-          document.getElementById('confirmGroup').style.display='none';
-          document.getElementById('rememberRow').style.display='flex';resetBtn();
-        }else{showErr('Unexpected response');resetBtn()}
-      }).catch(function(err){showErr(err.message||'Sign up failed');resetBtn()});
-    }
-
-    function fallbackLogin(em,pw){
-      setTimeout(function(){sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);window.location.href='/app'},800);
-    }
-
-    function showErr(msg){
-      document.getElementById('errMsg').textContent=msg;
-      document.getElementById('errMsg').style.display='block';
-      document.querySelector('.login-card').classList.add('shake');
-      setTimeout(function(){document.querySelector('.login-card').classList.remove('shake')},300);
-    }
-
-    function resetBtn(){
-      var btn=document.getElementById('loginBtn');
-      btn.textContent=isSignUp?'Sign Up':'Launch Platform';btn.style.opacity='1';btn.style.pointerEvents='auto';
-    }
-
-    document.getElementById('demoBtn').onclick=function(){
-      sessionStorage.setItem('sw_auth','demo');sessionStorage.setItem('sw_user','demo@skywave.io');window.location.href='/app';
-    };
-
-    document.getElementById('forgotLink').onclick=function(e){
-      e.preventDefault();var em=document.getElementById('email').value.trim();
-      if(!em){showErr('Enter your email first');return}
-      if(!sb){showErr('Auth service loading');return}
-      sb.auth.resetPasswordForEmail(em).then(function(res){
-        if(res.error){showErr(res.error.message)}
-        else{document.getElementById('successMsg').textContent='Reset link sent to '+em;
-             document.getElementById('successMsg').style.display='block';document.getElementById('errMsg').style.display='none'}
-      });
-    };
-  </script>
-  </body>
-</html>html>
-  </script></span></label></label>
-  </body>
-  </style></title>
-  </head>
+<head>
+<meta charset="utf-8">
+<title>SkyWave Ai - Tower Site Acquisition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#1565c0;--sky:#29b6f6;--gold:#ffb300;--dark:#040d1a;}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:"Inter",system-ui,sans-serif;background:var(--dark);color:#fff;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden}
+.bg::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,#0d2a5e 0%,#040d1a 65%);}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(21,101,192,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(21,101,192,.15) 1px,transparent 1px);background-size:60px 60px;animation:gm 20s linear infinite;}
+@keyframes gm{0%{transform:translateY(0)}100%{transform:translateY(60px)}}
+.stars{position:absolute;inset:0;}.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite var(--del,0s);opacity:0;}
+@keyframes tw{0%,100%{opacity:0}50%{opacity:.8}}
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(41,182,246,.12);animation:pr 4s ease-out infinite;}
+@keyframes pr{0%{transform:translate(-50%,-50%) scale(.8);opacity:.7}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:28px;}
+.logo-svg{width:130px;height:130px;filter:drop-shadow(0 0 20px rgba(41,182,246,.55)) drop-shadow(0 0 40px rgba(255,179,0,.3));animation:lf 4s ease-in-out infinite;}
+@keyframes lf{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.brand{font-size:40px;font-weight:900;letter-spacing:-1px;margin-top:10px;background:linear-gradient(135deg,#fff 0%,#29b6f6 50%,#ffb300 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.brand-sub{font-size:11px;font-weight:600;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:4px;}
+.tagline{font-size:19px;font-weight:300;color:rgba(255,255,255,.65);text-align:center;max-width:480px;line-height:1.65;margin-bottom:10px;}
+.tagline strong{color:#fff;font-weight:700;}
+.live-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(41,182,246,.08);border:1px solid rgba(41,182,246,.25);border-radius:20px;padding:5px 16px;font-size:12px;color:#29b6f6;margin-bottom:32px;}
+.live-dot{width:7px;height:7px;background:#29b6f6;border-radius:50%;animation:pd 1.5s ease-in-out infinite;flex-shrink:0;}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.3}}
+.feats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;max-width:640px;}
+.feat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:8px;padding:7px 14px;font-size:11px;color:rgba(255,255,255,.55);}
+.stats{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;padding:20px 36px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:14px;margin-bottom:36px;}
+.sn{font-size:26px;font-weight:800;background:linear-gradient(135deg,#29b6f6,#ffb300);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;}
+.sl{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-top:2px;}
+.card{background:rgba(255,255,255,.035);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:30px;width:100%;max-width:360px;margin-bottom:32px;}
+.card h3{font-size:15px;font-weight:700;margin-bottom:18px;text-align:center;color:rgba(255,255,255,.85);}
+.f{margin-bottom:12px;}.f label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin-bottom:5px;}
+.f input{width:100%;padding:11px 13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;outline:none;transition:border-color .2s;font-family:inherit;}
+.f input:focus{border-color:#29b6f6;background:rgba(41,182,246,.07);}.f input::placeholder{color:rgba(255,255,255,.2);}
+.lbtn{width:100%;padding:13px;background:linear-gradient(135deg,#1565c0,#29b6f6);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;margin-top:4px;}
+.lbtn:hover{opacity:.9;transform:translateY(-1px);}
+.llinks{display:flex;justify-content:center;gap:18px;margin-top:12px;}
+.llinks a{color:rgba(255,255,255,.35);font-size:11px;text-decoration:none;transition:color .2s;}.llinks a:hover{color:#29b6f6;}
+.div{text-align:center;color:rgba(255,255,255,.18);font-size:11px;margin:12px 0;position:relative;}
+.div::before,.div::after{content:"";position:absolute;top:50%;width:36%;height:1px;background:rgba(255,255,255,.08);}.div::before{left:0}.div::after{right:0}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:40px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:all .2s;}
+.btn-p{background:linear-gradient(135deg,#1565c0,#29b6f6);color:#fff;box-shadow:0 4px 20px rgba(21,101,192,.45);}.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(21,101,192,.65);}
+.btn-g{background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.35);color:#ffb300;}.btn-g:hover{background:rgba(255,179,0,.18);transform:translateY(-2px);}
+footer{position:relative;z-index:1;text-align:center;padding:18px 20px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;color:rgba(255,255,255,.2);line-height:1.9;}
+footer strong{color:rgba(255,255,255,.35);}footer a{color:rgba(255,255,255,.25);text-decoration:none;}footer a:hover{color:rgba(255,255,255,.55);}
+</style>
+</head>
+<body>
+<div class="bg"><div class="grid"></div><div class="stars" id="stars"></div><div class="ring" style="width:480px;height:480px;top:38%;left:50%;animation-delay:0s"></div><div class="ring" style="width:480px;height:480px;top:38%;left:50%;animation-delay:1.6s"></div><div class="ring" style="width:480px;height:480px;top:38%;left:50%;animation-delay:3.2s"></div></div>
+<main>
+<div class="logo-wrap">
+<svg class="logo-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#29b6f6"/><stop offset="100%" stop-color="#0d47a1"/></linearGradient>
+<linearGradient id="ag" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ffb300"/><stop offset="100%" stop-color="#ff6f00"/></linearGradient>
+<linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b3e5fc"/><stop offset="100%" stop-color="#1565c0"/></linearGradient>
+<filter id="gl"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<path d="M68 112 C36 110 14 90 14 65 C14 38 38 18 68 18 C52 27 42 44 42 65 C42 87 52 104 68 112Z" fill="url(#wg)" opacity="0.95"/>
+<path d="M68 110 C82 102 96 87 100 65 C104 43 96 27 84 18 C102 27 116 44 116 65 C116 88 98 108 68 110Z" fill="url(#ag)" opacity="0.88"/>
+<path d="M30 82 Q19 65 33 47 Q48 28 68 23 C50 32 41 52 43 69 Q44 84 54 95 Q42 92 30 82Z" fill="#29b6f6" opacity="0.45"/>
+<line x1="70" y1="60" x2="59" y2="100" stroke="#0d47a1" stroke-width="2.8" stroke-linecap="round"/>
+<line x1="70" y1="60" x2="81" y2="100" stroke="#0d47a1" stroke-width="2.8" stroke-linecap="round"/>
+<line x1="62" y1="78" x2="78" y2="78" stroke="#1565c0" stroke-width="2" stroke-linecap="round"/>
+<line x1="60" y1="89" x2="80" y2="89" stroke="#1565c0" stroke-width="2" stroke-linecap="round"/>
+<rect x="67.5" y="60" width="5" height="40" rx="1.5" fill="url(#tg)"/>
+<rect x="62" y="58" width="16" height="4" rx="2" fill="#b3e5fc"/>
+<line x1="70" y1="40" x2="70" y2="58" stroke="#90caf9" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M63 45 Q70 37 77 45" stroke="#ffb300" stroke-width="2.8" fill="none" stroke-linecap="round" filter="url(#gl)"/>
+<path d="M58 38 Q70 26 82 38" stroke="#ffb300" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.65" filter="url(#gl)"/>
+<path d="M54 32 Q70 16 86 32" stroke="#ffb300" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.35"/>
+<circle cx="70" cy="48" r="3" fill="#ffb300" filter="url(#gl)"/>
+</svg>
+<div class="brand">SkyWave<em style="color:#ffb300;font-style:italic;">Ai</em></div>
+<div class="brand-sub">Tower Site Acquisition Platform</div>
+</div>
+<div class="live-badge"><span class="live-dot"></span>AI-Powered SCIP Generation &mdash; Live</div>
+<p class="tagline">From <strong>RF coordinates</strong> to <strong>signed mailer letters</strong><br>in minutes. Not hours.</p>
+<div class="feats"><div class="feat">&#127757; 0.5mi SARF Ring</div><div class="feat">&#127968; Parcel Scoring</div><div class="feat">&#127915; Auto-Target A&ndash;E</div><div class="feat">&#9993; Mailer Letters</div><div class="feat">&#128205; Zoning Lookup</div><div class="feat">&#128202; CSV Export</div></div>
+<div class="stats"><div><div class="sn">&lt;5 min</div><div class="sl">Per SCIP</div></div><div><div class="sn">$49</div><div class="sl">Per Site</div></div><div><div class="sn">A&ndash;E</div><div class="sl">Targets</div></div><div><div class="sn">100%</div><div class="sl">Automated</div></div></div>
+<div class="card"><h3>&#128274; Sign In</h3>
+<form id="lf"><div class="f"><label>Email</label><input type="email" id="em" placeholder="you@company.com" autocomplete="email" required></div>
+<div class="f"><label>Password</label><input type="password" id="pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" required></div>
+<button type="submit" class="lbtn" id="lb">Sign In &rarr;</button></form>
+<div class="div">or</div>
+<div class="llinks"><a href="/pricing">&#128640; Pricing</a><a href="#">Forgot?</a><a href="#">Sign Up</a></div>
+<div id="lmsg" style="margin-top:10px;text-align:center;font-size:12px;color:#ff6b6b;display:none;"></div>
+</div>
+<div class="ctas"><a href="/app" class="btn btn-p">&#9889; Launch App</a><a href="/pricing" class="btn btn-g">&#128202; See Pricing</a></div>
+</main>
+<footer><strong>&copy; 2026 SkyWave Ai &mdash; All Rights Reserved.</strong><br>
+This software is proprietary and protected by U.S. and international copyright law. Unauthorized copying, reproduction,<br>
+redistribution, or use of this platform, in whole or in part, is strictly prohibited and punishable by law.<br>
+<span style="color:rgba(255,255,255,.13);font-size:10px;">17 U.S.C. &sect;&sect; 101 et seq. &bull; All trademarks property of their respective owners. &bull; Patents pending.</span><br><br>
+<a href="/pricing">Pricing</a> &bull; <a href="#">Terms</a> &bull; <a href="#">Privacy</a> &bull; <a href="mailto:support@skywaveai.com">support@skywaveai.com</a></footer>
+<script>
+(function(){var c=document.getElementById("stars");for(var i=0;i<120;i++){var s=document.createElement("div");s.className="star";s.style.left=Math.random()*100+"%";s.style.top=Math.random()*100+"%";s.style.setProperty("--d",(2+Math.random()*4)+"s");s.style.setProperty("--del",(-Math.random()*4)+"s");c.appendChild(s);}})();
+document.getElementById("lf").addEventListener("submit",function(e){e.preventDefault();var btn=document.getElementById("lb"),msg=document.getElementById("lmsg");btn.textContent="Signing in...";btn.disabled=true;msg.style.display="none";
+var SU="https://skpxeouvikzgsaurkohf.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHhlb3V2aWt6Z3NhdXJrb2hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk5MDA0NzUsImV4cCI6MjAyNTQ3NjQ3NX0.wEWgn8uB4k0KhW5EUj1DUnUADV1T8rk5SM8VkTkR8oo";
+fetch(SU+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":SK},body:JSON.stringify({email:document.getElementById("em").value,password:document.getElementById("pw").value})})
+.then(function(r){return r.json();}).then(function(d){if(d.access_token){localStorage.setItem("sw_token",d.access_token);window.location.href="/app";}else{btn.textContent="Sign In →";btn.disabled=false;msg.textContent=d.error_description||"Invalid credentials";msg.style.display="block";}})
+.catch(function(){btn.textContent="Sign In →";btn.disabled=false;msg.textContent="Connection error";msg.style.display="block";});});
+</script>
+</body>
+</html>

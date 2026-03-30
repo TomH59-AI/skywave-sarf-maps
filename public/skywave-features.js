@@ -145,24 +145,81 @@ function initFiber() {
 }
 
 function initZoning() {
-  var jSel=document.getElementById('zoning-jurisdiction'),viewBtn=document.getElementById('zoning-view'),statusDiv=document.getElementById('zoning-status'),overlay=document.getElementById('zoning-overlay'),modal=document.getElementById('zoning-modal'),closeBtn=overlay.querySelector('.zm-close'),printBtn=document.getElementById('zm-print'),municodeBtn=document.getElementById('zm-municode'),body=document.getElementById('zm-body'),titleEl=document.getElementById('zm-title'),_ord=[],_curJ='',_zCache={};
-  function closeZoning(){overlay.classList.remove('open');overlay.style.display='none';}
-  closeBtn.addEventListener('click',function(e){e.stopPropagation();closeZoning();});overlay.addEventListener('click',function(e){if(e.target===overlay)closeZoning();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('open'))closeZoning();});modal.addEventListener('click',function(e){e.stopPropagation();});printBtn.addEventListener('click',function(e){e.stopPropagation();window.print();});
-  statusDiv.textContent='Loading jurisdictions...';
-  supabaseRequest('zoning_ordinances?select=jurisdiction_name&order=jurisdiction_name').then(function(r){return r.json();}).then(function(data){_ord=Array.isArray(data)?data:[];var seen={};_ord.forEach(function(o){if(!seen[o.jurisdiction_name]){seen[o.jurisdiction_name]=true;var opt=document.createElement('option');opt.value=o.jurisdiction_name;opt.textContent=o.jurisdiction_name;jSel.appendChild(opt);}});statusDiv.textContent=Object.keys(seen).length+' jurisdictions loaded';}).catch(function(err){statusDiv.textContent='❌ '+err.message;});
-  function fetchOrd(j,cb){if(_zCache[j]){cb(_zCache[j]);return;}supabaseRequest('zoning_ordinances?jurisdiction_name=eq.'+encodeURIComponent(j)+'&select=*').then(function(r){return r.json();}).then(function(data){if(data&&data.length){_zCache[j]=data[0];cb(data[0]);}else cb(null);}).catch(function(){cb(null);});}
-  map.on('click','pf',function(e){
-    if(!e.features||!e.features.length)return;
-    var f=e.features[0].properties,zoning=f.ZONING||f.ZONE||'',parcelId=f.PARCELID||f.parcel_id||'',owner=f.OWNER||f.OWN_NAME||'Unknown',acres=f.ACRES||'',county=f.COUNTY||f.CNTY||'Orange County';
-    var safeId=parcelId.replace(/[^a-z0-9]/gi,'_');
-    var html='<div class="zq-popup"><div class="zq-title">📍 '+parcelId+'</div><div class="zq-row"><span class="zq-label">Owner</span><span class="zq-val">'+owner+'</span></div><div class="zq-row"><span class="zq-label">Acres</span><span class="zq-val">'+acres+'</span></div><div class="zq-row"><span class="zq-label">Zoning</span><span class="zq-val">'+zoning+'</span></div><div id="zq-ex-'+safeId+'" style="margin-top:4px;font-size:10px;color:#888">Loading ordinance...</div><button class="zq-btn" onclick="document.getElementById('zoning-jurisdiction').value=''+county+'';document.getElementById('zoning-view').click()">View Full Ordinance</button></div>';
-    new mapboxgl.Popup({maxWidth:'300px'}).setLngLat(e.lngLat).setHTML(html).addTo(map);
-    fetchOrd(county,function(o){var el=document.getElementById('zq-ex-'+safeId);if(!el)return;if(!o){el.textContent='No ordinance data for '+county;return;}var s='';if(o.max_tower_height_ft)s+='Height: '+o.max_tower_height_ft+'ft  ';if(o.setback_requirement)s+='• Setback: '+o.setback_requirement+'  ';if(o.permit_type)s+='• Permit: '+o.permit_type;el.innerHTML=s?'<span style="color:#7b1fa2;font-weight:600">'+s+'</span>':'<span style="color:#888">No ordinance data</span>';});
+  var jSel=document.getElementById('zoning-jurisdiction'),viewBtn=document.getElementById('zoning-view'),statusDiv=document.getElementById('zoning-status'),resultDiv=document.getElementById('zoning-result');
+  if(!jSel||!viewBtn) return;
+  var _zCache={};
+  window._openZoning=function(county){
+    if(!jSel||!viewBtn) return;
+    if(county) jSel.value=county;
+    viewBtn.click();
+  };
+  window._showZoningPopup=function(map,parcelId,owner,acres,zoning,county){
+    var html='<div class="zq-popup"><div class="zq-title">📍 '+parcelId+'<\/div>'+
+      '<div class="zq-row"><span class="zq-label">Owner<\/span><span class="zq-val">'+owner+'<\/span><\/div>'+
+      '<div class="zq-row"><span class="zq-label">Acres<\/span><span class="zq-val">'+acres+'<\/span><\/div>'+
+      '<div class="zq-row"><span class="zq-label">Zoning<\/span><span class="zq-val">'+zoning+'<\/span><\/div>'+
+      '<div class="zq-ord" id="zq-ord-loading">Loading ordinance...<\/div>'+
+      '<button class="zq-btn zq-open-btn">View Full Ordinance ↗<\/button><\/div>';
+    var pop=new mapboxgl.Popup({closeOnClick:true,maxWidth:'300px'})
+      .setLngLat(map.getCenter())
+      .setHTML(html)
+      .addTo(map);
+    pop.on('open',function(){
+      var btn=document.querySelector('.zq-open-btn');
+      if(btn) btn.addEventListener('click',function(){ window._openZoning(county); });
+      if(_zCache[county]){
+        var el=document.getElementById('zq-ord-loading');
+        if(el) el.innerHTML=_zCache[county];
+        return;
+      }
+      if(county){
+        supabaseRequest('/rest/v1/zoning_ordinances?county=eq.'+encodeURIComponent(county)+'&limit=1',{})
+          .then(function(r){return r.json();})
+          .then(function(rows){
+            var el=document.getElementById('zq-ord-loading');
+            if(!el) return;
+            if(rows&&rows.length){
+              var row=rows[0];
+              var snippet='';
+              if(row.height_limit) snippet+='<div class="zq-row"><span class="zq-label">Height<\/span><span class="zq-val">'+row.height_limit+'<\/span><\/div>';
+              if(row.setback) snippet+='<div class="zq-row"><span class="zq-label">Setback<\/span><span class="zq-val">'+row.setback+'<\/span><\/div>';
+              if(row.permit_type) snippet+='<div class="zq-row"><span class="zq-label">Permit<\/span><span class="zq-val">'+row.permit_type+'<\/span><\/div>';
+              _zCache[county]=snippet||'<em>No ordinance data<\/em>';
+              el.innerHTML=_zCache[county];
+            } else {
+              el.innerHTML='<em>No ordinance data<\/em>';
+            }
+          }).catch(function(){ var el=document.getElementById('zq-ord-loading'); if(el) el.innerHTML=''; });
+      } else {
+        var el=document.getElementById('zq-ord-loading');
+        if(el) el.innerHTML='';
+      }
+    });
+  };
+  viewBtn.addEventListener('click',function(){
+    var county=jSel.value.trim();
+    if(!county){ if(statusDiv) statusDiv.textContent='Select a county first.'; return; }
+    if(statusDiv) statusDiv.textContent='Loading...';
+    if(resultDiv) resultDiv.innerHTML='';
+    supabaseRequest('/rest/v1/zoning_ordinances?county=eq.'+encodeURIComponent(county),{})
+      .then(function(r){return r.json();})
+      .then(function(rows){
+        if(statusDiv) statusDiv.textContent='';
+        if(!rows||!rows.length){ if(resultDiv) resultDiv.innerHTML='<p>No ordinance data for this county.<\/p>'; return; }
+        var html='';
+        rows.forEach(function(row){
+          html+='<div class="zo-card">';
+          html+='<h4>'+row.county+(row.state?' ('+row.state+')':'')+'<\/h4>';
+          if(row.zoning_code) html+='<p><strong>Code:<\/strong> '+row.zoning_code+'<\/p>';
+          if(row.height_limit) html+='<p><strong>Height Limit:<\/strong> '+row.height_limit+'<\/p>';
+          if(row.setback) html+='<p><strong>Setback:<\/strong> '+row.setback+'<\/p>';
+          if(row.permit_type) html+='<p><strong>Permit Type:<\/strong> '+row.permit_type+'<\/p>';
+          if(row.notes) html+='<p><strong>Notes:<\/strong> '+row.notes+'<\/p>';
+          html+='<\/div>';
+        });
+        if(resultDiv) resultDiv.innerHTML=html;
+      }).catch(function(e){ if(statusDiv) statusDiv.textContent='Error: '+e.message; });
   });
-  viewBtn.addEventListener('click',function(){var j=jSel.value;if(!j){statusDiv.textContent='⚠ Select a jurisdiction';return;}_curJ=j;fetchOrd(j,function(o){if(!o){body.innerHTML='<p>No data found for '+j+'</p>';overlay.style.display='flex';overlay.classList.add('open');return;}titleEl.textContent='🏛 '+j+' - Telecom Zoning Ordinance';var html='<h3>Tower Standards</h3>'+zRow('Max Tower Height',o.max_tower_height_ft?o.max_tower_height_ft+' ft':'Not specified')+zRow('Setback Requirements',o.setback_requirement||'Not specified')+zRow('Fall Zone',o.fall_zone_requirement||'Not specified')+'<h3>Requirements</h3>'+zRow('Collocation Required',zBool(o.collocation_required))+zRow('Stealth Design',zBool(o.stealth_required))+zRow('Landscaping Required',zBool(o.landscaping_required))+'<h3>Permitting</h3>'+zRow('Permit Type',o.permit_type||'Not specified')+zRow('Application Fee',o.application_fee||'Not specified')+zRow('Public Hearing Required',zBool(o.public_hearing_required))+zRow('Balloon Test Required',zBool(o.balloon_test_required))+zRow('Photo Simulation Required',zBool(o.photo_sim_required));if(o.additional_requirements)html+='<h3>Additional Requirements</h3><div style="font-size:12px;line-height:1.5;padding:6px 0">'+(o.additional_requirements||o.notes||'')+'</div>';html+='<h3>Source</h3>'+zRow('Ordinance Reference',o.ldc_section_reference||o.ordinance_source_url||'Municipal Code')+zRow('Last Verified',o.last_verified||'N/A');body.innerHTML=html;overlay.style.display='flex';overlay.classList.add('open');});});
-  municodeBtn.addEventListener('click',function(e){e.stopPropagation();if(!_curJ)return;municodeBtn.textContent='Loading...';supabaseRequest('municode_ordinances?jurisdiction_name=eq.'+encodeURIComponent(_curJ)+'&select=*&order=section_number').then(function(r){return r.json();}).then(function(data){if(!data||!data.length)return supabaseRequest('municode_ordinances?jurisdiction_name=ilike.'+encodeURIComponent('%'+_curJ.replace('County','').replace('City of','').trim()+'%')+'&select=*&order=section_number&limit=20').then(function(r2){return r2.json();});return data;}).then(function(data){municodeBtn.textContent='Show Full Municode Sections';if(!data||!data.length){body.insertAdjacentHTML('beforeend','<h3>Municode Sections</h3><p>No sections found</p>');return;}var html='<h3>Municode Sections ('+data.length+')</h3>';data.forEach(function(s){html+='<div class="municode-section"><h4>§ '+(s.section_number||'')+' - '+(s.section_title||s.title||'Untitled')+'</h4><pre>'+(s.section_text||s.content||s.text||'No content')+'</pre></div>';});body.insertAdjacentHTML('beforeend',html);}).catch(function(){municodeBtn.textContent='Show Full Municode Sections';});});
-  function zRow(l,v){return '<div class="zr-row"><span class="zr-label">'+l+'</span><span class="zr-value">'+v+'</span></div>';}
-  function zBool(v){if(v===true||v==='true'||v==='Yes'||v==='yes')return '<span class="zr-yes">✅ Yes</span>';if(v===false||v==='false'||v==='No'||v==='no')return '<span class="zr-no">❌ No</span>';return v||'Not specified';}
 }
 
 function initMailer() {
@@ -186,9 +243,7 @@ function initMailer() {
   selectAllBtn.addEventListener('click',function(e){e.stopPropagation();var checks=tbody.querySelectorAll('.mm-check'),allChecked=Array.from(checks).every(function(c){return c.checked;});checks.forEach(function(c){c.checked=!allChecked;});checkAll.checked=!allChecked;updateFooter();});
   checkAll.addEventListener('change',function(e){e.stopPropagation();tbody.querySelectorAll('.mm-check').forEach(function(c){c.checked=checkAll.checked;});updateFooter();});
   tbody.addEventListener('change',function(e){e.stopPropagation();updateFooter();});
-  exportBtn.addEventListener('click',function(e){e.stopPropagation();var checks=tbody.querySelectorAll('.mm-check:checked');if(!checks.length){alert('Select at least one parcel');return;}var csv='Target,Parcel ID,Owner,Address,Zoning,Acres
-';checks.forEach(function(c){var idx=parseInt(c.dataset.idx),p=_parcels[idx];if(p)csv+='"'+(p.target||'')+'","'+p.id+'","'+p.owner+'","'+p.address+'","'+p.zoning+'","'+p.acres+'"
-';});var blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='SARF_Targets_Mailer.csv';a.click();URL.revokeObjectURL(url);});
+  exportBtn.addEventListener('click',function(e){e.stopPropagation();var checks=tbody.querySelectorAll('.mm-check:checked');if(!checks.length){alert('Select at least one parcel');return;}var csv='Target,Parcel ID,Owner,Address,Zoning,Acres\r\n';checks.forEach(function(c){var idx=parseInt(c.dataset.idx),p=_parcels[idx];if(p)csv+='"'+(p.target||'')+'","'+p.id+'","'+p.owner+'","'+p.address+'","'+p.zoning+'","'+p.acres+'"\r\n';});var blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='SARF_Targets_Mailer.csv';a.click();URL.revokeObjectURL(url);});
   printBtn.addEventListener('click',function(e){e.stopPropagation();window.print();});
   searchInput.addEventListener('input',function(e){e.stopPropagation();var q=this.value.toLowerCase();renderTable(_parcels.filter(function(p){return p.id.toLowerCase().indexOf(q)>=0||p.owner.toLowerCase().indexOf(q)>=0||p.address.toLowerCase().indexOf(q)>=0;}));});
   genLettersBtn.addEventListener('click',function(e){
@@ -211,7 +266,7 @@ function initMailer() {
     html+='<div style="font-weight:bold;margin-bottom:16px;font-size:12px">RE: Tower Site Lease Opportunity &mdash; Your Property at '+p.address+'</div>';
     html+='<p>Dear '+formatOwnerName(p.owner)+',</p>';
     html+='<p>My name is [Your Name], and I represent SkyWave Telecom Development, a tower site acquisition company working on behalf of national wireless carriers to identify and secure new cell tower locations in your area.</p>';
-    html+='<p>After conducting a detailed radio frequency (RF) engineering analysis of our client's network coverage requirements, we have identified your property &mdash; Parcel ID <strong>'+p.id+'</strong>, located at '+p.address+' and comprising approximately <strong>'+p.acres+' acres</strong> &mdash; as a highly suitable candidate for a wireless communications tower installation.</p>';
+    html+='<p>After conducting a detailed radio frequency (RF) engineering analysis of our client&#39;s network coverage requirements, we have identified your property &mdash; Parcel ID <strong>'+p.id+'</strong>, located at '+p.address+' and comprising approximately <strong>'+p.acres+' acres</strong> &mdash; as a highly suitable candidate for a wireless communications tower installation.</p>';
     html+='<p>We would like to discuss the possibility of entering into a long-term ground lease agreement for a small portion of your property, typically <strong>2,500 to 5,000 square feet</strong>. In exchange, you would receive:</p>';
     html+='<ul style="margin:8px 0 12px 20px;font-size:13px;line-height:1.8"><li>A competitive annual ground lease payment, typically ranging from <strong>$18,000 to $36,000 per year</strong>, paid monthly in advance</li><li>Automatic <strong>rent escalators</strong> of 2&ndash;3% annually or 15% every five years</li><li>A lease term of <strong>25 to 30 years</strong> providing long-term passive income</li><li>Minimal disruption &mdash; the tower compound typically occupies less than <strong>1% of your total acreage</strong></li><li>All permits, construction costs, and maintenance covered entirely by our team</li></ul>';
     html+='<p>The tower installation process is handled completely by our licensed contractors. Your participation requires only your signature on the lease agreement and a brief site visit by our RF engineers to confirm feasibility.</p>';

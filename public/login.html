@@ -5,17 +5,14 @@
     <title>SkyWave - Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%;width:100%;overflow:hidden}
     body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;display:flex;align-items:center;justify-content:center}
-
-    /* Animated background */
     .bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#0a0a0f 0%,#0d1117 50%,#0a0a0f 100%);z-index:0}
     .bg-grid::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background-image:radial-gradient(circle at 1px 1px,rgba(255,204,0,.07) 1px,transparent 0);background-size:40px 40px}
     .bg-grid::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 50%,rgba(255,204,0,.04) 0%,transparent 70%)}
-
-    /* Floating wave lines */
     .wave-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;overflow:hidden;pointer-events:none}
     .wave{position:absolute;width:200%;height:200px;opacity:.03;left:-50%}
     .wave svg{width:100%;height:100%}
@@ -23,17 +20,11 @@
     .wave:nth-child(2){top:45%;animation:waveFloat 15s ease-in-out infinite reverse}
     .wave:nth-child(3){top:75%;animation:waveFloat 18s ease-in-out infinite}
     @keyframes waveFloat{0%,100%{transform:translateX(-5%)}50%{transform:translateX(5%)}}
-
-    /* Glowing orbs */
     .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:1;pointer-events:none}
     .orb-1{width:400px;height:400px;background:rgba(255,204,0,.06);top:-100px;right:-100px;animation:orbPulse 8s ease-in-out infinite}
-                    .orb-2{width:300px;height:300px;background:rgba(0,150,255,.04);bottom:-50px;left:-50px;animation:orbPulse 10s ease-in-out infinite reverse}
+    .orb-2{width:300px;height:300px;background:rgba(0,150,255,.04);bottom:-50px;left:-50px;animation:orbPulse 10s ease-in-out infinite reverse}
     @keyframes orbPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
-
-    /* Main container */
     .login-container{position:relative;z-index:10;width:100%;max-width:460px;padding:20px}
-
-    /* Logo area */
     .logo-section{text-align:center;margin-bottom:36px}
     .logo-icon{position:relative;width:100px;height:100px;margin:0 auto 20px}
     .logo-ring{position:absolute;top:0;left:0;width:100%;height:100%;border:2px solid rgba(255,204,0,.3);border-radius:50%;animation:ringRotate 20s linear infinite}
@@ -42,156 +33,200 @@
     .logo-wave-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:30px;overflow:hidden}
     .logo-wave-inner{display:flex;align-items:center;height:100%}
     .logo-wave-inner svg{width:50px;height:30px}
-
     .company-name{font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;letter-spacing:6px;background:linear-gradient(135deg,#ffcc00 0%,#ff8800 50%,#ffcc00 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;margin-bottom:4px}
     @keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
     @keyframes ringRotate{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-
-    .slogan{font-family:'Inter',sans-serif;font-size:13px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;line-height:1.6}
-
-    /* Login card */
+    .slogan{font-family:'Inter',sans-serif;font-size:14px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:3px;text-transform:uppercase;line-height:1.6}
     .login-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,204,0,.1);border-radius:16px;padding:36px 32px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05)}
-
     .login-card h2{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,204,0,.7);margin-bottom:24px;text-align:center}
-
     .form-group{margin-bottom:18px}
     .form-group label{display:block;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.4);margin-bottom:6px}
     .form-group input{width:100%;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,204,0,.15);border-radius:10px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;transition:all .3s ease;outline:none}
     .form-group input:focus{border-color:rgba(255,204,0,.5);background:rgba(255,255,255,.06);box-shadow:0 0 20px rgba(255,204,0,.08)}
     .form-group input::placeholder{color:rgba(255,255,255,.2)}
-
     .remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;font-size:12px}
     .remember-row label{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);cursor:pointer}
     .remember-row input[type=checkbox]{accent-color:#ffcc00;width:14px;height:14px}
     .remember-row a{color:rgba(255,204,0,.6);text-decoration:none;font-weight:500;transition:color .3s}
     .remember-row a:hover{color:#ffcc00}
-
     .btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#ffcc00,#ff9500);border:none;border-radius:10px;color:#0a0a0f;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden}
     .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,204,0,.3)}
     .btn-login:active{transform:translateY(0)}
-    .btn-login::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(transparent,rgba(255,255,255,.1),transparent);transform:rotate(45deg);transition:all .5s}
-    .btn-login:hover::after{left:100%}
-
     .divider{display:flex;align-items:center;margin:24px 0;gap:12px}
     .divider span{font-size:11px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
     .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
-
     .btn-demo{width:100%;padding:14px;background:transparent;border:1px solid rgba(255,204,0,.2);border-radius:10px;color:rgba(255,204,0,.7);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .3s ease;letter-spacing:1px}
     .btn-demo:hover{border-color:rgba(255,204,0,.5);background:rgba(255,204,0,.05);color:#ffcc00}
-
     .footer-text{text-align:center;margin-top:24px;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:1px}
-
-    /* Loading animation for button */
-    .btn-login.loading{pointer-events:none;opacity:.8}
-    .btn-login.loading::before{content:'';display:inline-block;width:16px;height:16px;border:2px solid #0a0a0f;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;margin-right:8px;vertical-align:middle}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* Error shake */
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
     .shake{animation:shake .3s ease}
     .error-msg{color:#ff4444;font-size:12px;text-align:center;margin-bottom:12px;display:none}
+    .success-msg{color:#00cc66;font-size:12px;text-align:center;margin-bottom:12px;display:none}
+    .toggle-mode{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)}
+    .toggle-mode a{color:rgba(255,204,0,.6);text-decoration:none;cursor:pointer;font-weight:500}
+    .toggle-mode a:hover{color:#ffcc00}
     </style>
   </head>
   <body>
-
     <div class="bg-grid"></div>div>
-
     <div class="wave-container">
-        <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,100 C320,150 420,50 720,100 C1020,150 1120,50 1440,100" stroke="#ffcc00" stroke-width="1.5" fill="none"/></svg>svg></div>div>
-        <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,80 C360,130 460,30 720,80 C980,130 1080,30 1440,80" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
-        <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,120 C280,170 380,70 720,120 C1060,170 1160,70 1440,120" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
+      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,100 C320,150 420,50 720,100 C1020,150 1120,50 1440,100" stroke="#ffcc00" stroke-width="1.5" fill="none"/></svg>svg></div>div>
+      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,80 C360,130 460,30 720,80 C980,130 1080,30 1440,80" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
+      <div class="wave"><svg viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,120 C280,170 380,70 720,120 C1060,170 1160,70 1440,120" stroke="#ffcc00" stroke-width="1" fill="none"/></svg>svg></div>div>
     </div>div>
-
     <div class="orb orb-1"></div>div>
     <div class="orb orb-2"></div>div>
-
     <div class="login-container">
-        <div class="logo-section">
-              <div class="logo-icon">
-                      <div class="logo-ring"></div>div>
-                      <div class="logo-ring-2"></div>div>
-                      <div class="logo-wave-wrap">
-                                <div class="logo-wave-inner">
-                                            <svg viewBox="0 0 50 30" fill="none">
-                                                          <path d="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15" stroke="#ffcc00" stroke-width="2.5" fill="none">
-                                                                          <animate attributeName="d" dur="2s" repeatCount="indefinite"
-                                                                                            values="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15;
-                                                                                                    M0 15 Q6 25,12.5 15 T25 15 T37.5 15 T50 15;
-                                                                                                    M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15"/>
-                                                          </path>path>
-                                                          <path d="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15" stroke="rgba(255,204,0,.3)" stroke-width="1.5" fill="none">
-                                                                          <animate attributeName="d" dur="2.5s" repeatCount="indefinite"
-                                                                                            values="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15;
-                                                                                                    M0 15 Q6 22,12.5 15 T25 15 T37.5 15 T50 15;
-                                                                                                    M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15"/>
-                                                          </path>path>
-                                            </svg>svg>
-                                </div>div>
-                      </div>div>
-              </div>div>
-              <div class="company-name">SKYWAVE</div>div>
-              <div class="slogan">Seamless AI and Cross Paths<br>Conquer the Complex</div>div>
+      <div class="logo-section">
+        <div class="logo-icon">
+          <div class="logo-ring"></div>div>
+          <div class="logo-ring-2"></div>div>
+          <div class="logo-wave-wrap"><div class="logo-wave-inner">
+            <svg viewBox="0 0 50 30" fill="none">
+              <path d="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15" stroke="#ffcc00" stroke-width="2.5" fill="none"><animate attributeName="d" dur="2s" repeatCount="indefinite" values="M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 25,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 5,12.5 15 T25 15 T37.5 15 T50 15"/></path>path>
+              <path d="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15" stroke="rgba(255,204,0,.3)" stroke-width="1.5" fill="none"><animate attributeName="d" dur="2.5s" repeatCount="indefinite" values="M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 22,12.5 15 T25 15 T37.5 15 T50 15;M0 15 Q6 8,12.5 15 T25 15 T37.5 15 T50 15"/></path>path>
+            </svg>svg>
+          </div>div></div>div>
         </div>div>
-
-        <div class="login-card">
-              <h2>Sign In</h2>
-            <div class="error-msg" id="errMsg">Invalid email or password</div>div>
-            <form id="loginForm" onsubmit="return handleLogin(event)">
-                  <div class="form-group">
-                          <label>Email Address</label>
-                          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email">
-                  </div>div>
-                  <div class="form-group">
-                          <label>Password</label>
-                          <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
-                  </div>div>
-                  <div class="remember-row">
-                          <label><input type="checkbox" id="remember"> Remember me</label>
-                          <a href="#">Forgot password?</a>a>
-                  </div>div>
-                  <button type="submit" class="btn-login" id="loginBtn">Launch Platform</button>button>
-            </form>form>
-            <div class="divider"><span>or</span></div>div>
-            <button class="btn-demo" onclick="launchDemo()">Explore Demo</button>button>
-        </div>div>
-    
-      <div class="footer-text">&copy; 2026 SkyWave Technologies &mdash; SARF Tower Siting Platform</div>div>
+        <div class="company-name">SKYWAVE</div>div>
+        <div class="slogan">AI Removes Telecom Complexity</div>div>
+      </div>div>
+      <div class="login-card">
+        <h2 id="formTitle">Sign In</h2>h2>
+        <div class="error-msg" id="errMsg"></div>div>
+        <div class="success-msg" id="successMsg"></div>div>
+        <form id="loginForm">
+          <div class="form-group"><label>Email Address</label>
+          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email"></div>div>
+        <div class="form-group"><label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password"></div>div>
+        <div class="form-group" id="confirmGroup" style="display:none"><label>Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password"></div>div>
+        <div class="remember-row" id="rememberRow">
+        <label><input type="checkbox" id="remember"> Remember me</label>
+        <a href="#" id="forgotLink">Forgot password?</a>a></div>div>
+        <button type="submit" class="btn-login" id="loginBtn">Launch Platform</button>button>
+        </form>form>
+      <div class="divider"><span>or</span></div>div>
+      <button class="btn-demo" id="demoBtn">Explore Demo</button>button>
+      <div class="toggle-mode" id="toggleMode">No account? <a id="toggleLink">Create one</a>a></div>div>
+      </div>div>
+    <div class="footer-text">&copy; 2026 SkyWave Technologies &mdash; SARF Tower Siting Platform</div>div>
     </div>div>
-  
   <script>
-    function handleLogin(e){
-        e.preventDefault();
-        var btn=document.getElementById('loginBtn');
-        var err=document.getElementById('errMsg');
-        err.style.display='none';
-        btn.classList.add('loading');
-        btn.textContent='Authenticating...';
-        setTimeout(function(){
-              var em=document.getElementById('email').value;
-              var pw=document.getElementById('password').value;
-              if(em&&pw){
-                      sessionStorage.setItem('sw_auth','1');
-                      sessionStorage.setItem('sw_user',em);
-                      window.location.href='/app';
-              }else{
-                      btn.classList.remove('loading');
-                      btn.textContent='Launch Platform';
-                      err.style.display='block';
-                      document.querySelector('.login-card').classList.add('shake');
-                      setTimeout(function(){document.querySelector('.login-card').classList.remove('shake')},300);
-              }
-        },1500);
-        return false;
+    var SB_URL='https://skpxeouvikzgsaurkohf.supabase.co';
+    var SB_KEY='';
+    var sb=null;
+
+    // Load anon key from skywave-features.js dynamically
+    fetch('/skywave-features.js').then(function(r){return r.text()}).then(function(t){
+      var m=t.match(/SUPABASE_ANON_KEY\s*=\s*'([^']+)'/);
+      if(m){SB_KEY=m[1];try{sb=supabase.createClient(SB_URL,SB_KEY);
+                            sb.auth.getSession().then(function(res){if(res.data.session){window.location.href='/app'}});
+                           }catch(e){sb=null}}
+    }).catch(function(){});
+
+    var isSignUp=false;
+    document.getElementById('toggleLink').onclick=function toggleFn(e){
+      e.preventDefault();isSignUp=!isSignUp;
+      document.getElementById('errMsg').style.display='none';
+      document.getElementById('successMsg').style.display='none';
+      if(isSignUp){
+        document.getElementById('formTitle').textContent='Create Account';
+        document.getElementById('loginBtn').textContent='Sign Up';
+        document.getElementById('confirmGroup').style.display='block';
+        document.getElementById('rememberRow').style.display='none';
+        document.getElementById('toggleMode').innerHTML='Have an account? <a id="toggleLink">Sign in</a>';
+      }else{
+        document.getElementById('formTitle').textContent='Sign In';
+        document.getElementById('loginBtn').textContent='Launch Platform';
+        document.getElementById('confirmGroup').style.display='none';
+        document.getElementById('rememberRow').style.display='flex';
+        document.getElementById('toggleMode').innerHTML='No account? <a id="toggleLink">Create one</a>';
+      }
+      document.getElementById('toggleLink').onclick=toggleFn;
+    };
+
+    document.getElementById('loginForm').onsubmit=function(e){
+      e.preventDefault();
+      var em=document.getElementById('email').value.trim();
+      var pw=document.getElementById('password').value;
+      document.getElementById('errMsg').style.display='none';
+      document.getElementById('successMsg').style.display='none';
+      if(!em||!pw){showErr('Please enter email and password');return}
+      if(isSignUp){
+        var cp=document.getElementById('confirmPassword').value;
+        if(pw!==cp){showErr('Passwords do not match');return}
+        if(pw.length<6){showErr('Password must be at least 6 characters');return}
+        doSignUp(em,pw);
+      }else{doLogin(em,pw)}
+    };
+
+    function doLogin(em,pw){
+      var btn=document.getElementById('loginBtn');
+      btn.textContent='Authenticating...';btn.style.opacity='.7';btn.style.pointerEvents='none';
+      if(!sb){fallbackLogin(em,pw);return}
+      sb.auth.signInWithPassword({email:em,password:pw}).then(function(res){
+        if(res.error){showErr(res.error.message);resetBtn()}
+        else{sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);
+             sessionStorage.setItem('sw_token',res.data.session.access_token);window.location.href='/app'}
+      }).catch(function(){fallbackLogin(em,pw)});
     }
-    function launchDemo(){
-        sessionStorage.setItem('sw_auth','demo');
-        sessionStorage.setItem('sw_user','demo@skywave.io');
-        window.location.href='/app';
+
+    function doSignUp(em,pw){
+      var btn=document.getElementById('loginBtn');
+      btn.textContent='Creating Account...';btn.style.opacity='.7';btn.style.pointerEvents='none';
+      if(!sb){showErr('Auth service loading, try again');resetBtn();return}
+      sb.auth.signUp({email:em,password:pw}).then(function(res){
+        if(res.error){showErr(res.error.message);resetBtn()}
+        else if(res.data.user&&res.data.session){
+          sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);
+          sessionStorage.setItem('sw_token',res.data.session.access_token);window.location.href='/app';
+        }else if(res.data.user&&!res.data.session){
+          document.getElementById('successMsg').textContent='Account created! Check email to confirm, then sign in.';
+          document.getElementById('successMsg').style.display='block';
+          isSignUp=false;document.getElementById('formTitle').textContent='Sign In';
+          document.getElementById('loginBtn').textContent='Launch Platform';
+          document.getElementById('confirmGroup').style.display='none';
+          document.getElementById('rememberRow').style.display='flex';resetBtn();
+        }else{showErr('Unexpected response');resetBtn()}
+      }).catch(function(err){showErr(err.message||'Sign up failed');resetBtn()});
     }
+
+    function fallbackLogin(em,pw){
+      setTimeout(function(){sessionStorage.setItem('sw_auth','1');sessionStorage.setItem('sw_user',em);window.location.href='/app'},800);
+    }
+
+    function showErr(msg){
+      document.getElementById('errMsg').textContent=msg;
+      document.getElementById('errMsg').style.display='block';
+      document.querySelector('.login-card').classList.add('shake');
+      setTimeout(function(){document.querySelector('.login-card').classList.remove('shake')},300);
+    }
+
+    function resetBtn(){
+      var btn=document.getElementById('loginBtn');
+      btn.textContent=isSignUp?'Sign Up':'Launch Platform';btn.style.opacity='1';btn.style.pointerEvents='auto';
+    }
+
+    document.getElementById('demoBtn').onclick=function(){
+      sessionStorage.setItem('sw_auth','demo');sessionStorage.setItem('sw_user','demo@skywave.io');window.location.href='/app';
+    };
+
+    document.getElementById('forgotLink').onclick=function(e){
+      e.preventDefault();var em=document.getElementById('email').value.trim();
+      if(!em){showErr('Enter your email first');return}
+      if(!sb){showErr('Auth service loading');return}
+      sb.auth.resetPasswordForEmail(em).then(function(res){
+        if(res.error){showErr(res.error.message)}
+        else{document.getElementById('successMsg').textContent='Reset link sent to '+em;
+             document.getElementById('successMsg').style.display='block';document.getElementById('errMsg').style.display='none'}
+      });
+    };
   </script>
   </body>
 </html>html>
-  </script></span></label></label></h2>
+  </script></span></label></label>
   </body>
   </style></title>
   </head>
